@@ -19,29 +19,36 @@ import java.util.Collections
 
 @Configuration
 class CorsConfiguration {
-
   @Bean
   @Conditional(CorsAllowedOriginsPresent::class)
-  fun corsConfigurationSource(sessionHeaderName: String, komgaProperties: KomgaProperties): UrlBasedCorsConfigurationSource =
+  fun corsConfigurationSource(
+    sessionHeaderName: String,
+    komgaProperties: KomgaProperties,
+  ): UrlBasedCorsConfigurationSource =
     UrlBasedCorsConfigurationSource().apply {
       registerCorsConfiguration(
         "/**",
         CorsConfiguration().applyPermitDefaultValues().apply {
           allowedOrigins = komgaProperties.cors.allowedOrigins
-          allowedMethods = HttpMethod.values().map { it.name }
+          allowedMethods = HttpMethod.values().map { it.name() }
           allowCredentials = true
           addExposedHeader(HttpHeaders.CONTENT_DISPOSITION)
           addExposedHeader(sessionHeaderName)
-        }
+        },
       )
     }
 
   class CorsAllowedOriginsPresent : SpringBootCondition() {
-    override fun getMatchOutcome(context: ConditionContext, metadata: AnnotatedTypeMetadata): ConditionOutcome {
-      val defined = Binder.get(context.environment)
-        .bind(ConfigurationPropertyName.of("komga.cors.allowed-origins"), Bindable.of(List::class.java))
-        .orElse(Collections.emptyList<String>())
-        .isNotEmpty()
+    override fun getMatchOutcome(
+      context: ConditionContext,
+      metadata: AnnotatedTypeMetadata,
+    ): ConditionOutcome {
+      val defined =
+        Binder
+          .get(context.environment)
+          .bind(ConfigurationPropertyName.of("komga.cors.allowed-origins"), Bindable.of(List::class.java))
+          .orElse(Collections.emptyList<String>())
+          .isNotEmpty()
       return ConditionOutcome(defined, "Cors allowed-origins present")
     }
   }

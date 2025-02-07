@@ -16,11 +16,17 @@
         <v-list-item @click="addToCollection" v-if="isAdmin">
           <v-list-item-title>{{ $t('menu.add_to_collection') }}</v-list-item-title>
         </v-list-item>
+        <v-list-item @click="addToReadList" v-if="isAdmin">
+          <v-list-item-title>{{ $t('menu.add_to_readlist') }}</v-list-item-title>
+        </v-list-item>
         <v-list-item @click="markRead" v-if="!isRead">
           <v-list-item-title>{{ $t('menu.mark_read') }}</v-list-item-title>
         </v-list-item>
         <v-list-item @click="markUnread" v-if="!isUnread">
           <v-list-item-title>{{ $t('menu.mark_unread') }}</v-list-item-title>
+        </v-list-item>
+        <v-list-item @click="promptDeleteSeries" class="list-danger" v-if="isAdmin">
+          <v-list-item-title>{{ $t('menu.delete') }}</v-list-item-title>
         </v-list-item>
       </v-list>
     </v-menu>
@@ -29,6 +35,7 @@
 <script lang="ts">
 import Vue from 'vue'
 import {SeriesDto} from '@/types/komga-series'
+import {BookSearch, SearchConditionSeriesId, SearchOperatorIs} from '@/types/komga-search'
 
 export default Vue.extend({
   name: 'SeriesActionsMenu',
@@ -48,38 +55,45 @@ export default Vue.extend({
     },
   },
   watch: {
-    menuState (val) {
+    menuState(val) {
       this.$emit('update:menu', val)
     },
   },
   computed: {
-    isAdmin (): boolean {
+    isAdmin(): boolean {
       return this.$store.getters.meAdmin
     },
-    isRead (): boolean {
+    isRead(): boolean {
       return this.series.booksReadCount === this.series.booksCount
     },
-    isUnread (): boolean {
+    isUnread(): boolean {
       return this.series.booksUnreadCount === this.series.booksCount
     },
   },
   methods: {
-    analyze () {
+    analyze() {
       this.$komgaSeries.analyzeSeries(this.series)
     },
-    refreshMetadata () {
+    refreshMetadata() {
       this.$komgaSeries.refreshMetadata(this.series)
     },
-    addToCollection () {
-      this.$store.dispatch('dialogAddSeriesToCollection', this.series)
+    addToCollection() {
+      this.$store.dispatch('dialogAddSeriesToCollection', [this.series.id])
     },
-    async markRead () {
+    async addToReadList() {
+      const books = await this.$komgaBooks.getBooksList({
+        condition: new SearchConditionSeriesId(new SearchOperatorIs(this.series.id)),
+      } as BookSearch, {unpaged: true, sort: ['metadata.numberSort']})
+      this.$store.dispatch('dialogAddBooksToReadList', books.content.map(b => b.id))
+    },
+    async markRead() {
       await this.$komgaSeries.markAsRead(this.series.id)
-      // this.$eventHub.$emit(SERIES_CHANGED, seriesToEventSeriesChanged(this.series))
     },
-    async markUnread () {
+    async markUnread() {
       await this.$komgaSeries.markAsUnread(this.series.id)
-      // this.$eventHub.$emit(SERIES_CHANGED, seriesToEventSeriesChanged(this.series))
+    },
+    promptDeleteSeries() {
+      this.$store.dispatch('dialogDeleteSeries', this.series)
     },
   },
 })

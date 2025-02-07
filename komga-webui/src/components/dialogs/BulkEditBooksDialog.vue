@@ -43,6 +43,32 @@
                 </v-btn>
 
                 <span class="subtitle-1">{{ prop.label }}</span>
+                <v-btn v-if="prop.prop === 'number'" icon @click="copyFromNumberSort">
+                  <v-tooltip bottom>
+                    <template v-slot:activator="{ on }">
+                      <v-icon v-on="on">mdi-content-copy</v-icon>
+                    </template>
+                    <span>{{ $t('dialog.edit_books.copy_from', {field: $t('dialog.edit_books.field_number_sort')}) }}</span>
+                  </v-tooltip>
+                </v-btn>
+                <span v-if="prop.prop === 'numberSort'">
+                  <v-btn icon @click="numberSortDecrement">
+                    <v-tooltip bottom>
+                    <template v-slot:activator="{ on }">
+                      <v-icon v-on="on">mdi-numeric-negative-1</v-icon>
+                    </template>
+                    <span>{{ $t('dialog.edit_books.number_sort_decrement') }}</span>
+                  </v-tooltip>
+                  </v-btn>
+                  <v-btn icon @click="numberSortIncrement">
+                    <v-tooltip bottom>
+                    <template v-slot:activator="{ on }">
+                      <v-icon v-on="on">mdi-numeric-positive-1</v-icon>
+                    </template>
+                    <span>{{ $t('dialog.edit_books.number_sort_increment') }}</span>
+                  </v-tooltip>
+                  </v-btn>
+                </span>
               </v-col>
             </v-row>
           </v-container>
@@ -96,7 +122,7 @@
 
                 <!--  Sort Number  -->
                 <v-col cols="2">
-                  <v-text-field v-model="form[book.id].numberSort"
+                  <v-text-field v-model.number="form[book.id].numberSort"
                                 type="number"
                                 step="0.1"
                                 dense
@@ -253,13 +279,13 @@ export default Vue.extend({
     validateIsbn(isbn: string): string | boolean {
       return isbn && !new IsbnVerify(isbn).isIsbn13({check_digit: true}) ? this.$t('dialog.edit_books.field_isbn_error').toString() : true
     },
-    validateRequired(value: string): string | boolean {
-      return !value ? this.$t('common.required').toString() : true
+    validateRequired(value: any): string | boolean {
+      return value || value === 0 ? true : this.$t('common.required').toString()
     },
     validateReleaseDate(date: string): string | boolean {
       return date && !isMatch(date, 'yyyy-MM-dd') ? this.$t('dialog.edit_books.field_release_date_error').toString() : true
     },
-    bookDisplayName(book: BookDto):string {
+    bookDisplayName(book: BookDto): string {
       const parts = book.url.split('/')
       return parts[parts.length - 2] + '/' + parts[parts.length - 1]
     },
@@ -277,6 +303,21 @@ export default Vue.extend({
       const propLock = `${prop}Lock`
       for (const book of this.books) {
         this.form[book.id][propLock] = lock
+      }
+    },
+    numberSortDecrement() {
+      for (const book of this.books) {
+        this.form[book.id].numberSort = this.form[book.id].numberSort - 1
+      }
+    },
+    numberSortIncrement() {
+      for (const book of this.books) {
+        this.form[book.id].numberSort = this.form[book.id].numberSort + 1
+      }
+    },
+    copyFromNumberSort() {
+      for (const book of this.books) {
+        this.form[book.id].number = this.form[book.id].numberSort
       }
     },
     dialogReset(books: BookDto[]) {
@@ -308,56 +349,6 @@ export default Vue.extend({
     },
     validateForm(): any {
       if ((this.$refs.form as any).validate()) {
-        // const metadata = {
-        //   authorsLock: this.form.authorsLock,
-        //   tagsLock: this.form.tagsLock,
-        // }
-        //
-        // if (this.$v.form?.authors?.$dirty) {
-        //   this.$_.merge(metadata, {
-        //     authors: this.$_.keys(this.form.authors).flatMap((role: string) =>
-        //       this.$_.get(this.form.authors, role).map((name: string) => ({name: name, role: role})),
-        //     ),
-        //   })
-        // }
-        //
-        // if (this.$v.form?.tags?.$dirty) {
-        //   this.$_.merge(metadata, {tags: this.form.tags})
-        // }
-        //
-        // this.$_.merge(metadata, {
-        //   titleLock: this.form.titleLock,
-        //   numberLock: this.form.numberLock,
-        //   numberSortLock: this.form.numberSortLock,
-        //   summaryLock: this.form.summaryLock,
-        //   releaseDateLock: this.form.releaseDateLock,
-        //   isbnLock: this.form.isbnLock,
-        // })
-        //
-        // if (this.$v.form?.title?.$dirty) {
-        //   this.$_.merge(metadata, {title: this.form.title})
-        // }
-        //
-        // if (this.$v.form?.number?.$dirty) {
-        //   this.$_.merge(metadata, {number: this.form.number})
-        // }
-        //
-        // if (this.$v.form?.numberSort?.$dirty) {
-        //   this.$_.merge(metadata, {numberSort: this.form.numberSort})
-        // }
-        //
-        // if (this.$v.form?.summary?.$dirty) {
-        //   this.$_.merge(metadata, {summary: this.form.summary})
-        // }
-        //
-        // if (this.$v.form?.releaseDate?.$dirty) {
-        //   this.$_.merge(metadata, {releaseDate: this.form.releaseDate ? this.form.releaseDate : null})
-        // }
-        //
-        // if (this.$v.form?.isbn?.$dirty) {
-        //   this.$_.merge(metadata, {isbn: this.form.isbn})
-        // }
-
         return this.form
       }
       return null

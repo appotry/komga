@@ -1,124 +1,153 @@
+
+import nu.studer.gradle.jooq.JooqGenerate
 import org.apache.tools.ant.taskdefs.condition.Os
+import org.flywaydb.gradle.task.FlywayMigrateTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.util.prefixIfNot
 
 plugins {
-  run {
-    kotlin("jvm")
-    kotlin("plugin.spring")
-    kotlin("kapt")
-  }
-  id("org.springframework.boot") version "2.5.5"
-  id("com.gorylenko.gradle-git-properties") version "2.3.2"
-  id("nu.studer.jooq") version "5.2.2"
-  id("org.flywaydb.flyway") version "7.10.0"
+  kotlin("jvm")
+  kotlin("plugin.spring")
+  kotlin("kapt")
+  id("org.springframework.boot") version "3.4.0"
+  id("com.gorylenko.gradle-git-properties") version "2.4.2"
+  id("nu.studer.jooq") version "9.0"
+  id("org.flywaydb.flyway") version "10.20.1"
   id("com.github.johnrengelman.processes") version "0.5.0"
-  id("org.springdoc.openapi-gradle-plugin") version "1.3.2"
+  id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
+  id("com.google.devtools.ksp") version "1.9.21-1.0.16"
   jacoco
 }
 
-group = "org.gotson"
+val benchmarkSourceSet =
+  sourceSets.create("benchmark") {
+    java {
+      compileClasspath += sourceSets.main.get().output
+      runtimeClasspath += sourceSets.main.get().runtimeClasspath
+    }
+  }
+
+val benchmarkImplementation by configurations.getting {
+  extendsFrom(configurations.testImplementation.get())
+}
+val kaptBenchmark by configurations.getting {
+  extendsFrom(configurations.kaptTest.get())
+}
 
 dependencies {
-  implementation(kotlin("stdlib-jdk8"))
+  implementation(kotlin("stdlib"))
   implementation(kotlin("reflect"))
 
-  implementation(platform("org.springframework.boot:spring-boot-dependencies:2.5.5"))
+  api(platform("org.springframework.boot:spring-boot-dependencies:3.4.0"))
 
-  implementation("org.springframework.boot:spring-boot-starter-web")
+  api("org.springframework.boot:spring-boot-starter-web")
+  implementation("org.springframework.boot:spring-boot-starter-webflux")
   implementation("org.springframework.boot:spring-boot-starter-validation")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
   implementation("org.springframework.boot:spring-boot-starter-security")
   implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
   implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
-  implementation("org.springframework.boot:spring-boot-starter-artemis")
   implementation("org.springframework.boot:spring-boot-starter-jooq")
   implementation("org.springframework.session:spring-session-core")
-  implementation("com.github.gotson:spring-session-caffeine:1.0.3")
+  implementation("com.github.gotson:spring-session-caffeine:2.0.0")
+  implementation("org.springframework.data:spring-data-commons")
 
-  kapt("org.springframework.boot:spring-boot-configuration-processor:2.5.5")
-
-  implementation("org.apache.activemq:artemis-jms-server")
+  kapt("org.springframework.boot:spring-boot-configuration-processor:3.4.0")
 
   implementation("org.flywaydb:flyway-core")
 
-  implementation("io.github.microutils:kotlin-logging-jvm:2.0.8")
-  implementation("io.micrometer:micrometer-registry-influx")
-  implementation("io.hawt:hawtio-springboot:2.13.5")
+  api("io.github.oshai:kotlin-logging-jvm:6.0.9")
 
-  run {
-    val springdocVersion = "1.5.9"
-    implementation("org.springdoc:springdoc-openapi-ui:$springdocVersion")
-    implementation("org.springdoc:springdoc-openapi-security:$springdocVersion")
-    implementation("org.springdoc:springdoc-openapi-kotlin:$springdocVersion")
-    implementation("org.springdoc:springdoc-openapi-data-rest:$springdocVersion")
-  }
+  implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
 
   implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
   implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
 
-  implementation("commons-io:commons-io:2.10.0")
-  implementation("org.apache.commons:commons-lang3:3.12.0")
-  implementation("commons-validator:commons-validator:1.7")
+  implementation("commons-io:commons-io:2.18.0")
+  implementation("org.apache.commons:commons-lang3:3.14.0")
+  implementation("commons-validator:commons-validator:1.9.0")
 
   run {
-    val luceneVersion = "8.9.0"
+    // v10 requires JDK 21
+    val luceneVersion = "9.9.1"
     implementation("org.apache.lucene:lucene-core:$luceneVersion")
-    implementation("org.apache.lucene:lucene-analyzers-common:$luceneVersion")
+    implementation("org.apache.lucene:lucene-analysis-common:$luceneVersion")
     implementation("org.apache.lucene:lucene-queryparser:$luceneVersion")
+    implementation("org.apache.lucene:lucene-backward-codecs:$luceneVersion")
   }
 
-  implementation("com.ibm.icu:icu4j:69.1")
+  implementation("com.ibm.icu:icu4j:76.1")
 
-  implementation("org.apache.tika:tika-core:1.26")
-  implementation("org.apache.commons:commons-compress:1.20")
-  implementation("com.github.junrar:junrar:7.4.0")
-  implementation("org.apache.pdfbox:pdfbox:2.0.23")
+  implementation("com.appmattus.crypto:cryptohash:0.10.1")
+
+  implementation("org.apache.tika:tika-core:2.9.1")
+  implementation("org.apache.commons:commons-compress:1.27.1")
+  implementation("com.github.junrar:junrar:7.5.5")
+  implementation("com.github.gotson.nightcompress:nightcompress:1.1.0")
+  implementation("org.apache.pdfbox:pdfbox:3.0.3")
   implementation("net.grey-panther:natural-comparator:1.1")
-  implementation("org.jsoup:jsoup:1.13.1") // TODO: once updated to 1.14.2, address changes in EpubMetadataProvider.kt
+  implementation("org.jsoup:jsoup:1.18.3")
 
-  implementation("net.coobird:thumbnailator:0.4.14")
-  runtimeOnly("com.twelvemonkeys.imageio:imageio-jpeg:3.7.0")
-  runtimeOnly("com.twelvemonkeys.imageio:imageio-tiff:3.7.0")
-  runtimeOnly("com.twelvemonkeys.imageio:imageio-webp:3.7.0")
-  implementation("com.github.gotson:webp-imageio:0.2.2")
+  implementation("net.coobird:thumbnailator:0.4.20")
+  runtimeOnly("com.twelvemonkeys.imageio:imageio-jpeg:3.12.0")
+  runtimeOnly("com.twelvemonkeys.imageio:imageio-tiff:3.12.0")
+  runtimeOnly("com.twelvemonkeys.imageio:imageio-webp:3.12.0")
+  runtimeOnly("com.github.gotson.nightmonkeys:imageio-jxl:1.0.0")
+  runtimeOnly("com.github.gotson.nightmonkeys:imageio-heif:1.0.0")
+  runtimeOnly("com.github.gotson.nightmonkeys:imageio-webp:1.0.0")
   // support for jpeg2000
   runtimeOnly("com.github.jai-imageio:jai-imageio-jpeg2000:1.4.0")
-  runtimeOnly("org.apache.pdfbox:jbig2-imageio:3.0.3")
+  runtimeOnly("org.apache.pdfbox:jbig2-imageio:3.0.4")
 
   // barcode scanning
-  implementation("com.google.zxing:core:3.4.1")
+  implementation("com.google.zxing:core:3.5.3")
 
   implementation("com.jakewharton.byteunits:byteunits:0.9.1")
 
-  implementation("com.github.f4b6a3:tsid-creator:3.0.1")
+  implementation("com.github.f4b6a3:tsid-creator:5.2.6")
 
-  implementation("com.github.ben-manes.caffeine:caffeine:2.9.0")
+  implementation("com.github.ben-manes.caffeine:caffeine")
 
-  implementation("org.xerial:sqlite-jdbc:3.36.0.3")
-  jooqGenerator("org.xerial:sqlite-jdbc:3.36.0.3")
+  implementation("org.xerial:sqlite-jdbc:3.48.0.0")
+  jooqGenerator("org.xerial:sqlite-jdbc:3.48.0.0")
+
+  if (version.toString().endsWith(".0.0")) {
+    ksp("com.github.gotson.bestbefore:bestbefore-processor-kotlin:0.1.0")
+  }
 
   testImplementation("org.springframework.boot:spring-boot-starter-test") {
     exclude(module = "mockito-core")
   }
   testImplementation("org.springframework.security:spring-security-test")
-  testImplementation("com.ninja-squad:springmockk:3.0.1")
-  testImplementation("io.mockk:mockk:1.11.0")
-  testImplementation("com.google.jimfs:jimfs:1.2")
+  testImplementation("com.ninja-squad:springmockk:4.0.2")
+  testImplementation("io.mockk:mockk:1.13.11")
+  testImplementation("com.google.jimfs:jimfs:1.3.0")
 
-  testImplementation("com.tngtech.archunit:archunit-junit5:0.19.0")
+  testImplementation("com.tngtech.archunit:archunit-junit5:1.3.0")
 
-  developmentOnly("org.springframework.boot:spring-boot-devtools:2.5.5")
+  benchmarkImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+  benchmarkImplementation("org.openjdk.jmh:jmh-core:1.37")
+  kaptBenchmark("org.openjdk.jmh:jmh-generator-annprocess:1.37")
+  kaptBenchmark("org.springframework.boot:spring-boot-configuration-processor:3.4.0")
+
+  developmentOnly("org.springframework.boot:spring-boot-devtools:3.4.0")
 }
 
 val webui = "$rootDir/komga-webui"
 tasks {
+  withType<JavaCompile> {
+    sourceCompatibility = "17"
+    targetCompatibility = "17"
+  }
   withType<KotlinCompile> {
     kotlinOptions {
-      jvmTarget = "1.8"
-      freeCompilerArgs = listOf(
-        "-Xjsr305=strict",
-        "-Xopt-in=kotlin.time.ExperimentalTime",
-      )
+      jvmTarget = "17"
+      freeCompilerArgs =
+        listOf(
+          "-Xjsr305=strict",
+          "-Xemit-jvm-type-annotations",
+          "-opt-in=kotlin.time.ExperimentalTime",
+        )
     }
   }
 
@@ -128,25 +157,8 @@ tasks {
     maxHeapSize = "1G"
   }
 
-  withType<ProcessResources> {
-    filesMatching("application*.yml") {
-      expand(project.properties)
-    }
-  }
-
   getByName<Jar>("jar") {
-    enabled = false
-  }
-
-  // unpack Spring Boot's fat jar for better Docker image layering
-  register<JavaExec>("unpack") {
-    dependsOn(bootJar)
-    classpath = files(bootJar)
-    jvmArgs = listOf("-Djarmode=layertools")
-    args = "extract --destination $buildDir/dependency".split(" ")
-    doFirst {
-      delete("$buildDir/dependency")
-    }
+    enabled = true
   }
 
   register<Exec>("npmInstall") {
@@ -160,7 +172,7 @@ tasks {
       } else {
         "npm"
       },
-      "install"
+      "install",
     )
   }
 
@@ -177,7 +189,7 @@ tasks {
         "npm"
       },
       "run",
-      "build"
+      "build",
     )
   }
 
@@ -188,16 +200,155 @@ tasks {
     from("$webui/dist/")
     into("$projectDir/src/main/resources/public/")
   }
+
+  // modifies index.html to inject ThymeLeaf th: tags
+  register<Copy>("prepareThymeLeaf") {
+    group = "web"
+    dependsOn("copyWebDist")
+    from("$webui/dist/index.html")
+    into("$projectDir/src/main/resources/public/")
+    filter { line ->
+      line.replace("((?:src|content|href)=\")([\\w]*/.*?)(\")".toRegex()) {
+        it.groups[0]?.value + " th:" + it.groups[1]?.value + "@{" + it.groups[2]?.value?.prefixIfNot("/") + "}" + it.groups[3]?.value
+      }
+    }
+  }
+
+  withType<ProcessResources> {
+    filesMatching("application*.yml") {
+      expand(project.properties)
+    }
+    mustRunAfter(getByName("prepareThymeLeaf"))
+  }
+
+  register<Test>("benchmark") {
+    group = "benchmark"
+    inputs.files(benchmarkSourceSet.output)
+    testClassesDirs = benchmarkSourceSet.output.classesDirs
+    classpath = benchmarkSourceSet.runtimeClasspath
+  }
 }
 
 springBoot {
   buildInfo {
+    // prevent task bootBuildInfo to rerun every time
+    excludes = setOf("time")
     properties {
-      // prevent task bootBuildInfo to rerun every time
-      time = null
       // but rerun if the gradle.properties file changed
       inputs.file("$rootDir/gradle.properties")
     }
+  }
+}
+
+val sqliteUrls =
+  mapOf(
+    "main" to "jdbc:sqlite:${project.layout.buildDirectory.get()}/generated/flyway/main/database.sqlite",
+    "tasks" to "jdbc:sqlite:${project.layout.buildDirectory.get()}/generated/flyway/tasks/tasks.sqlite",
+  )
+val sqliteMigrationDirs =
+  mapOf(
+    "main" to
+      listOf(
+        "$projectDir/src/flyway/resources/db/migration/sqlite",
+        "$projectDir/src/flyway/kotlin/db/migration/sqlite",
+      ),
+    "tasks" to
+      listOf(
+        "$projectDir/src/flyway/resources/tasks/migration/sqlite",
+//    "$projectDir/src/flyway/kotlin/tasks/migration/sqlite",
+      ),
+  )
+
+task("flywayMigrateMain", FlywayMigrateTask::class) {
+  val id = "main"
+  url = sqliteUrls[id]
+  locations = arrayOf("classpath:db/migration/sqlite")
+  placeholders =
+    mapOf(
+      "library-file-hashing" to "true",
+      "library-scan-startup" to "false",
+      "delete-empty-collections" to "true",
+      "delete-empty-read-lists" to "true",
+    )
+  // in order to include the Java migrations, flywayClasses must be run before flywayMigrate
+  dependsOn("flywayClasses")
+  sqliteMigrationDirs[id]?.forEach { inputs.dir(it) }
+  outputs.dir("${project.layout.buildDirectory.get()}/generated/flyway/$id")
+  doFirst {
+    delete(outputs.files)
+    mkdir("${project.layout.buildDirectory.get()}/generated/flyway/$id")
+  }
+  mixed = true
+}
+
+task("flywayMigrateTasks", FlywayMigrateTask::class) {
+  val id = "tasks"
+  url = sqliteUrls[id]
+  locations = arrayOf("classpath:tasks/migration/sqlite")
+  // in order to include the Java migrations, flywayClasses must be run before flywayMigrate
+  dependsOn("flywayClasses")
+  sqliteMigrationDirs[id]?.forEach { inputs.dir(it) }
+  outputs.dir("${project.layout.buildDirectory.get()}/generated/flyway/$id")
+  doFirst {
+    delete(outputs.files)
+    mkdir("${project.layout.buildDirectory.get()}/generated/flyway/$id")
+  }
+  mixed = true
+}
+
+jooq {
+  version = "3.19.15"
+  configurations {
+    create("main") {
+      jooqConfiguration.apply {
+        logging = org.jooq.meta.jaxb.Logging.WARN
+        jdbc.apply {
+          driver = "org.sqlite.JDBC"
+          url = sqliteUrls["main"]
+        }
+        generator.apply {
+          database.apply {
+            name = "org.jooq.meta.sqlite.SQLiteDatabase"
+          }
+          target.apply {
+            packageName = "org.gotson.komga.jooq.main"
+          }
+        }
+      }
+    }
+    create("tasks") {
+      jooqConfiguration.apply {
+        logging = org.jooq.meta.jaxb.Logging.WARN
+        jdbc.apply {
+          driver = "org.sqlite.JDBC"
+          url = sqliteUrls["tasks"]
+        }
+        generator.apply {
+          database.apply {
+            name = "org.jooq.meta.sqlite.SQLiteDatabase"
+          }
+          target.apply {
+            packageName = "org.gotson.komga.jooq.tasks"
+          }
+        }
+      }
+    }
+  }
+}
+tasks.named<JooqGenerate>("generateJooq") {
+  sqliteMigrationDirs["main"]?.forEach { inputs.dir(it) }
+  allInputsDeclared = true
+  dependsOn("flywayMigrateMain")
+}
+tasks.named<JooqGenerate>("generateTasksJooq") {
+  sqliteMigrationDirs["tasks"]?.forEach { inputs.dir(it) }
+  allInputsDeclared = true
+  dependsOn("flywayMigrateTasks")
+}
+
+tasks.whenTaskAdded {
+  if (name == "kaptGenerateStubsKotlin") {
+    dependsOn("generateTasksJooq")
   }
 }
 
@@ -207,64 +358,42 @@ sourceSets {
     compileClasspath += sourceSets.main.get().compileClasspath
     runtimeClasspath += sourceSets.main.get().runtimeClasspath
   }
-  // main sourceSet depends on the output of flyway sourceSet
+  // main sourceSet depends on the output of flyway sourceSet, and generated jooq classes
   main {
-    output.dir(flyway.output)
-  }
-}
-
-val dbSqlite = mapOf(
-  "url" to "jdbc:sqlite:${project.buildDir}/generated/flyway/database.sqlite"
-)
-val migrationDirsSqlite = listOf(
-  "$projectDir/src/flyway/resources/db/migration/sqlite",
-  "$projectDir/src/flyway/kotlin/db/migration/sqlite"
-)
-flyway {
-  url = dbSqlite["url"]
-  locations = arrayOf("classpath:db/migration/sqlite")
-}
-tasks.flywayMigrate {
-  // in order to include the Java migrations, flywayClasses must be run before flywayMigrate
-  dependsOn("flywayClasses")
-  migrationDirsSqlite.forEach { inputs.dir(it) }
-  outputs.dir("${project.buildDir}/generated/flyway")
-  doFirst {
-    delete(outputs.files)
-    mkdir("${project.buildDir}/generated/flyway")
-  }
-  mixed = true
-}
-
-jooq {
-  version.set("3.14.8")
-  configurations {
-    create("main") {
-      jooqConfiguration.apply {
-        logging = org.jooq.meta.jaxb.Logging.WARN
-        jdbc.apply {
-          driver = "org.sqlite.JDBC"
-          url = dbSqlite["url"]
-        }
-        generator.apply {
-          database.apply {
-            name = "org.jooq.meta.sqlite.SQLiteDatabase"
-          }
-          target.apply {
-            packageName = "org.gotson.komga.jooq"
-          }
-        }
-      }
+    java {
+      output.dir(flyway.output)
+      srcDir("build/generated-src/jooq/tasks")
     }
   }
 }
-tasks.named<nu.studer.gradle.jooq.JooqGenerate>("generateJooq") {
-  migrationDirsSqlite.forEach { inputs.dir(it) }
-  allInputsDeclared.set(true)
-  dependsOn("flywayMigrate")
+tasks.runKtlintCheckOverMainSourceSet {
+  dependsOn("generateTasksJooq")
+}
+tasks.compileKotlin {
+  dependsOn("generateTasksJooq")
 }
 
 openApi {
-  outputDir.set(file("$projectDir/docs"))
-  forkProperties.set("-Dspring.profiles.active=claim")
+  outputDir = file("$projectDir/docs")
+  customBootRun {
+    args.add("--spring.profiles.active=claim")
+    args.add("--server.port=8080")
+  }
+}
+
+tasks.jacocoTestReport {
+  dependsOn(tasks.test)
+}
+
+configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+  filter {
+    exclude("**/db/migration/**")
+  }
+}
+
+project.afterEvaluate {
+  tasks.named("forkedSpringBootRun") {
+    mustRunAfter(tasks.bootJar)
+    mustRunAfter(tasks.jar)
+  }
 }

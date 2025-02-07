@@ -1,13 +1,13 @@
 package org.gotson.komga.interfaces.mvc
 
+import jakarta.servlet.ServletContext
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.GetMapping
-import javax.servlet.ServletContext
 
 @Controller
 class IndexController(
-  servletContext: ServletContext
+  servletContext: ServletContext,
 ) {
   private val baseUrl: String = "${servletContext.contextPath}/"
 

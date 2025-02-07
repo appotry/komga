@@ -1,8 +1,9 @@
 package org.gotson.komga.domain.service
 
-import mu.KotlinLogging
-import org.gotson.komga.application.events.EventPublisher
-import org.gotson.komga.application.tasks.TaskReceiver
+import io.github.oshai.kotlinlogging.KotlinLogging
+import org.gotson.komga.application.scheduler.LibraryScanScheduler
+import org.gotson.komga.application.tasks.LOWEST_PRIORITY
+import org.gotson.komga.application.tasks.TaskEmitter
 import org.gotson.komga.domain.model.DirectoryNotFoundException
 import org.gotson.komga.domain.model.DomainEvent
 import org.gotson.komga.domain.model.DuplicateNameException
@@ -11,6 +12,7 @@ import org.gotson.komga.domain.model.PathContainedInPath
 import org.gotson.komga.domain.persistence.LibraryRepository
 import org.gotson.komga.domain.persistence.SeriesRepository
 import org.gotson.komga.domain.persistence.SidecarRepository
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.support.TransactionTemplate
 import java.io.FileNotFoundException
@@ -24,16 +26,16 @@ class LibraryLifecycle(
   private val seriesLifecycle: SeriesLifecycle,
   private val seriesRepository: SeriesRepository,
   private val sidecarRepository: SidecarRepository,
-  private val taskReceiver: TaskReceiver,
-  private val eventPublisher: EventPublisher,
+  private val taskEmitter: TaskEmitter,
+  private val eventPublisher: ApplicationEventPublisher,
   private val transactionTemplate: TransactionTemplate,
+  private val libraryScanScheduler: LibraryScanScheduler,
 ) {
-
   @Throws(
     FileNotFoundException::class,
     DirectoryNotFoundException::class,
     DuplicateNameException::class,
-    PathContainedInPath::class
+    PathContainedInPath::class,
   )
   fun addLibrary(library: Library): Library {
     logger.info { "Adding new library: ${library.name} with root folder: ${library.root}" }
@@ -42,7 +44,7 @@ class LibraryLifecycle(
     checkLibraryValidity(library, existing)
 
     libraryRepository.insert(library)
-    taskReceiver.scanLibrary(library.id)
+    taskEmitter.scanLibrary(library.id)
 
     eventPublisher.publishEvent(DomainEvent.LibraryAdded(library))
 
@@ -52,16 +54,51 @@ class LibraryLifecycle(
   fun updateLibrary(toUpdate: Library) {
     logger.info { "Updating library: ${toUpdate.id}" }
 
-    val existing = libraryRepository.findAll().filter { it.id != toUpdate.id }
-    checkLibraryValidity(toUpdate, existing)
+    val libraries = libraryRepository.findAll()
+    val otherLibraries = libraries.filter { it.id != toUpdate.id }
+    val current = libraries.first { it.id == toUpdate.id }
+    checkLibraryValidity(toUpdate, otherLibraries)
 
     libraryRepository.update(toUpdate)
-    taskReceiver.scanLibrary(toUpdate.id)
+
+    if (current.scanInterval != toUpdate.scanInterval)
+      libraryScanScheduler.scheduleScan(toUpdate)
+
+    if (checkLibraryShouldRescan(current, toUpdate))
+      taskEmitter.scanLibrary(toUpdate.id)
+
+    if (toUpdate.hashFiles && !current.hashFiles)
+      taskEmitter.hashBooksWithoutHash(toUpdate)
+    if (toUpdate.hashKoreader && !current.hashKoreader)
+      taskEmitter.hashBooksWithoutHashKoreader(toUpdate)
+    if (toUpdate.hashPages && !current.hashPages)
+      taskEmitter.findBooksWithMissingPageHash(toUpdate, LOWEST_PRIORITY)
+    if (toUpdate.repairExtensions && !current.repairExtensions)
+      taskEmitter.repairExtensions(toUpdate, LOWEST_PRIORITY)
+    if (toUpdate.convertToCbz && !current.convertToCbz)
+      taskEmitter.findBooksToConvert(toUpdate, LOWEST_PRIORITY)
 
     eventPublisher.publishEvent(DomainEvent.LibraryUpdated(toUpdate))
   }
 
-  private fun checkLibraryValidity(library: Library, existing: Collection<Library>) {
+  private fun checkLibraryShouldRescan(
+    existing: Library,
+    updated: Library,
+  ): Boolean {
+    if (existing.root != updated.root) return true
+    if (existing.oneshotsDirectory != updated.oneshotsDirectory) return true
+    if (existing.scanCbx != updated.scanCbx) return true
+    if (existing.scanPdf != updated.scanPdf) return true
+    if (existing.scanEpub != updated.scanEpub) return true
+    if (existing.scanForceModifiedTime != updated.scanForceModifiedTime) return true
+    if (existing.scanDirectoryExclusions != updated.scanDirectoryExclusions) return true
+    return false
+  }
+
+  private fun checkLibraryValidity(
+    library: Library,
+    existing: Collection<Library>,
+  ) {
     if (!Files.exists(library.path))
       throw FileNotFoundException("Library root folder does not exist: ${library.root}")
 

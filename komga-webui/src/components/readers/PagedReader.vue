@@ -21,6 +21,7 @@
                        :key="`spread${i}`"
                        :eager="eagerLoad(i)"
                        class="full-height"
+                       :class="preRender(i) ? 'pre-render' : ''"
                        :transition="animations ? undefined : false"
                        :reverse-transition="animations ? undefined : false"
       >
@@ -131,7 +132,9 @@ export default Vue.extend({
     carouselPage(val, old) {
       this.$debug('[watch:carouselPage', `old:${old}`, `new:${val}`)
       if (this.carouselPage >= 0 && this.carouselPage < this.spreads.length && this.spreads.length > 0) {
-        this.$emit('update:page', this.spreads[this.carouselPage][0].number)
+        const currentSpread = this.spreads[this.carouselPage]
+        const currentPage = currentSpread.length == 2 && currentSpread[1].mediaType ? currentSpread[1] : currentSpread[0]
+        this.$emit('update:page', currentPage.number)
       } else {
         this.$emit('update:page', 1)
       }
@@ -216,6 +219,9 @@ export default Vue.extend({
     },
     eagerLoad(spreadIndex: number): boolean {
       return Math.abs(this.carouselPage - spreadIndex) <= 2
+    },
+    preRender(spreadIndex: number): boolean {
+      return Math.abs(this.carouselPage - spreadIndex) > (this.animations ? 1 : 0)
     },
     centerClick() {
       this.$emit('menu')
@@ -365,5 +371,12 @@ export default Vue.extend({
 .img-double-fit-screen {
   max-width: 50vw;
   height: 100vh;
+}
+
+.pre-render {
+  display: block !important;
+  position: fixed;
+  right: -1000vw;
+  top: -1000vh;
 }
 </style>

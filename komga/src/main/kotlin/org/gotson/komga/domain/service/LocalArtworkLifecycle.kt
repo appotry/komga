@@ -1,6 +1,6 @@
 package org.gotson.komga.domain.service
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.gotson.komga.domain.model.Book
 import org.gotson.komga.domain.model.MarkSelectedPreference
 import org.gotson.komga.domain.model.Series
@@ -15,16 +15,15 @@ class LocalArtworkLifecycle(
   private val libraryRepository: LibraryRepository,
   private val bookLifecycle: BookLifecycle,
   private val seriesLifecycle: SeriesLifecycle,
-  private val localArtworkProvider: LocalArtworkProvider
+  private val localArtworkProvider: LocalArtworkProvider,
 ) {
-
   fun refreshLocalArtwork(book: Book) {
     logger.info { "Refresh local artwork for book: $book" }
     val library = libraryRepository.findById(book.libraryId)
 
     if (library.importLocalArtwork)
       localArtworkProvider.getBookThumbnails(book).forEach {
-        bookLifecycle.addThumbnailForBook(it)
+        bookLifecycle.addThumbnailForBook(it, if (it.selected) MarkSelectedPreference.IF_NONE_OR_GENERATED else MarkSelectedPreference.NO)
       }
     else
       logger.info { "Library is not set to import local artwork, skipping" }
@@ -36,7 +35,7 @@ class LocalArtworkLifecycle(
 
     if (library.importLocalArtwork)
       localArtworkProvider.getSeriesThumbnails(series).forEach {
-        seriesLifecycle.addThumbnailForSeries(it, if (it.selected) MarkSelectedPreference.IF_NONE_EXIST else MarkSelectedPreference.NO)
+        seriesLifecycle.addThumbnailForSeries(it, if (it.selected) MarkSelectedPreference.IF_NONE_OR_GENERATED else MarkSelectedPreference.NO)
       }
     else
       logger.info { "Library is not set to import local artwork, skipping" }

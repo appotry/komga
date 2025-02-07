@@ -19,9 +19,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("api", produces = [MediaType.APPLICATION_JSON_VALUE])
 class ReferentialController(
-  private val referentialRepository: ReferentialRepository
+  private val referentialRepository: ReferentialRepository,
 ) {
-
   @GetMapping("v1/authors")
   fun getAuthorsV1(
     @AuthenticationPrincipal principal: KomgaPrincipal,
@@ -52,11 +51,13 @@ class ReferentialController(
     @Parameter(hidden = true) page: Pageable,
   ): Page<AuthorDto> {
     val pageRequest =
-      if (unpaged) Pageable.unpaged()
-      else PageRequest.of(
-        page.pageNumber,
-        page.pageSize,
-      )
+      if (unpaged)
+        Pageable.unpaged()
+      else
+        PageRequest.of(
+          page.pageNumber,
+          page.pageSize,
+        )
 
     return when {
       libraryId != null -> referentialRepository.findAllAuthorsByNameAndLibrary(search, role, libraryId, principal.user.getAuthorizedLibraryIds(null), pageRequest)
@@ -70,21 +71,19 @@ class ReferentialController(
   @GetMapping("v1/authors/names")
   fun getAuthorsNames(
     @AuthenticationPrincipal principal: KomgaPrincipal,
-    @RequestParam(name = "search", defaultValue = "") search: String
-  ): List<String> =
-    referentialRepository.findAllAuthorsNamesByName(search, principal.user.getAuthorizedLibraryIds(null))
+    @RequestParam(name = "search", defaultValue = "") search: String,
+  ): List<String> = referentialRepository.findAllAuthorsNamesByName(search, principal.user.getAuthorizedLibraryIds(null))
 
   @GetMapping("v1/authors/roles")
   fun getAuthorsRoles(
     @AuthenticationPrincipal principal: KomgaPrincipal,
-  ): List<String> =
-    referentialRepository.findAllAuthorsRoles(principal.user.getAuthorizedLibraryIds(null))
+  ): List<String> = referentialRepository.findAllAuthorsRoles(principal.user.getAuthorizedLibraryIds(null))
 
   @GetMapping("v1/genres")
   fun getGenres(
     @AuthenticationPrincipal principal: KomgaPrincipal,
     @RequestParam(name = "library_id", required = false) libraryId: String?,
-    @RequestParam(name = "collection_id", required = false) collectionId: String?
+    @RequestParam(name = "collection_id", required = false) collectionId: String?,
   ): Set<String> =
     when {
       libraryId != null -> referentialRepository.findAllGenresByLibrary(libraryId, principal.user.getAuthorizedLibraryIds(null))
@@ -92,11 +91,23 @@ class ReferentialController(
       else -> referentialRepository.findAllGenres(principal.user.getAuthorizedLibraryIds(null))
     }
 
+  @GetMapping("v1/sharing-labels")
+  fun getSharingLabels(
+    @AuthenticationPrincipal principal: KomgaPrincipal,
+    @RequestParam(name = "library_id", required = false) libraryId: String?,
+    @RequestParam(name = "collection_id", required = false) collectionId: String?,
+  ): Set<String> =
+    when {
+      libraryId != null -> referentialRepository.findAllSharingLabelsByLibrary(libraryId, principal.user.getAuthorizedLibraryIds(null))
+      collectionId != null -> referentialRepository.findAllSharingLabelsByCollection(collectionId, principal.user.getAuthorizedLibraryIds(null))
+      else -> referentialRepository.findAllSharingLabels(principal.user.getAuthorizedLibraryIds(null))
+    }
+
   @GetMapping("v1/tags")
   fun getTags(
     @AuthenticationPrincipal principal: KomgaPrincipal,
     @RequestParam(name = "library_id", required = false) libraryId: String?,
-    @RequestParam(name = "collection_id", required = false) collectionId: String?
+    @RequestParam(name = "collection_id", required = false) collectionId: String?,
   ): Set<String> =
     when {
       libraryId != null -> referentialRepository.findAllSeriesAndBookTagsByLibrary(libraryId, principal.user.getAuthorizedLibraryIds(null))
@@ -120,7 +131,7 @@ class ReferentialController(
   fun getSeriesTags(
     @AuthenticationPrincipal principal: KomgaPrincipal,
     @RequestParam(name = "library_id", required = false) libraryId: String?,
-    @RequestParam(name = "collection_id", required = false) collectionId: String?
+    @RequestParam(name = "collection_id", required = false) collectionId: String?,
   ): Set<String> =
     when {
       libraryId != null -> referentialRepository.findAllSeriesTagsByLibrary(libraryId, principal.user.getAuthorizedLibraryIds(null))
@@ -132,7 +143,7 @@ class ReferentialController(
   fun getLanguages(
     @AuthenticationPrincipal principal: KomgaPrincipal,
     @RequestParam(name = "library_id", required = false) libraryId: String?,
-    @RequestParam(name = "collection_id", required = false) collectionId: String?
+    @RequestParam(name = "collection_id", required = false) collectionId: String?,
   ): Set<String> =
     when {
       libraryId != null -> referentialRepository.findAllLanguagesByLibrary(libraryId, principal.user.getAuthorizedLibraryIds(null))
@@ -144,7 +155,7 @@ class ReferentialController(
   fun getPublishers(
     @AuthenticationPrincipal principal: KomgaPrincipal,
     @RequestParam(name = "library_id", required = false) libraryId: String?,
-    @RequestParam(name = "collection_id", required = false) collectionId: String?
+    @RequestParam(name = "collection_id", required = false) collectionId: String?,
   ): Set<String> =
     when {
       libraryId != null -> referentialRepository.findAllPublishersByLibrary(libraryId, principal.user.getAuthorizedLibraryIds(null))
@@ -156,7 +167,7 @@ class ReferentialController(
   fun getAgeRatings(
     @AuthenticationPrincipal principal: KomgaPrincipal,
     @RequestParam(name = "library_id", required = false) libraryId: String?,
-    @RequestParam(name = "collection_id", required = false) collectionId: String?
+    @RequestParam(name = "collection_id", required = false) collectionId: String?,
   ): Set<String> =
     when {
       libraryId != null -> referentialRepository.findAllAgeRatingsByLibrary(libraryId, principal.user.getAuthorizedLibraryIds(null))
@@ -168,7 +179,7 @@ class ReferentialController(
   fun getSeriesReleaseDates(
     @AuthenticationPrincipal principal: KomgaPrincipal,
     @RequestParam(name = "library_id", required = false) libraryId: String?,
-    @RequestParam(name = "collection_id", required = false) collectionId: String?
+    @RequestParam(name = "collection_id", required = false) collectionId: String?,
   ): Set<String> =
     when {
       libraryId != null -> referentialRepository.findAllSeriesReleaseDatesByLibrary(libraryId, principal.user.getAuthorizedLibraryIds(null))

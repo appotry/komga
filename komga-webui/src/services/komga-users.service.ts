@@ -1,8 +1,17 @@
 import {AxiosInstance} from 'axios'
+import {
+  ApiKeyDto,
+  ApiKeyRequestDto,
+  AuthenticationActivityDto,
+  PasswordUpdateDto,
+  UserCreationDto,
+  UserDto,
+  UserUpdateDto,
+} from '@/types/komga-users'
 
 const qs = require('qs')
 
-const API_USERS = '/api/v1/users'
+const API_USERS = '/api/v2/users'
 
 export default class KomgaUsersService {
   private http: AxiosInstance
@@ -11,7 +20,7 @@ export default class KomgaUsersService {
     this.http = http
   }
 
-  async getMeWithAuth(login: string, password: string): Promise<UserDto> {
+  async getMeWithAuth(login: string, password: string, rememberMe: boolean): Promise<UserDto> {
     try {
       return (await this.http.get(
         `${API_USERS}/me`,
@@ -19,6 +28,9 @@ export default class KomgaUsersService {
           auth: {
             username: login,
             password: password,
+          },
+          params: {
+            'remember-me': rememberMe,
           },
         },
       )).data
@@ -50,7 +62,7 @@ export default class KomgaUsersService {
     }
   }
 
-  async getAll(): Promise<UserWithSharedLibrariesDto[]> {
+  async getAll(): Promise<UserDto[]> {
     try {
       return (await this.http.get(`${API_USERS}`)).data
     } catch (e) {
@@ -74,9 +86,9 @@ export default class KomgaUsersService {
     }
   }
 
-  async patchUserRoles(userId: string, roles: RolesUpdateDto): Promise<UserDto> {
+  async patchUser(userId: string, patch: UserUpdateDto) {
     try {
-      return (await this.http.patch(`${API_USERS}/${userId}`, roles)).data
+      await this.http.patch(`${API_USERS}/${userId}`, patch)
     } catch (e) {
       let msg = `An error occurred while trying to patch user '${userId}'`
       if (e.response.data.message) {
@@ -100,7 +112,7 @@ export default class KomgaUsersService {
 
   async patchUserPassword(user: UserDto, newPassword: PasswordUpdateDto) {
     try {
-      return (await this.http.patch(`${API_USERS}/${user.id}/password`, newPassword)).data
+      await this.http.patch(`${API_USERS}/${user.id}/password`, newPassword)
     } catch (e) {
       let msg = `An error occurred while trying to update password for user ${user.email}`
       if (e.response.data.message) {
@@ -110,21 +122,9 @@ export default class KomgaUsersService {
     }
   }
 
-  async patchUserSharedLibraries(user: UserDto, sharedLibrariesUpdateDto: SharedLibrariesUpdateDto) {
-    try {
-      return (await this.http.patch(`${API_USERS}/${user.id}/shared-libraries`, sharedLibrariesUpdateDto)).data
-    } catch (e) {
-      let msg = `An error occurred while trying to update shared libraries for user ${user.email}`
-      if (e.response.data.message) {
-        msg += `: ${e.response.data.message}`
-      }
-      throw new Error(msg)
-    }
-  }
-
   async logout() {
     try {
-      await this.http.post(`${API_USERS}/logout`)
+      await this.http.post('api/logout')
     } catch (e) {
       let msg = 'An error occurred while trying to logout'
       if (e.response.data.message) {
@@ -164,11 +164,51 @@ export default class KomgaUsersService {
     }
   }
 
-  async getLatestAuthenticationActivityForUser(user: UserDto): Promise<AuthenticationActivityDto> {
+  async getLatestAuthenticationActivityForUser(userId: string, apiKeyId?: string): Promise<AuthenticationActivityDto> {
     try {
-      return (await this.http.get(`${API_USERS}/${user.id}/authentication-activity/latest`)).data
+      const params = {} as any
+      if (apiKeyId) {
+        params.apikey_id = apiKeyId
+      }
+      return (await this.http.get(`${API_USERS}/${userId}/authentication-activity/latest`, {params: params})).data
     } catch (e) {
-      let msg = `An error occurred while trying to retrieve latest authentication activity for user ${user.email}`
+      let msg = `An error occurred while trying to retrieve latest authentication activity for user ${userId}`
+      if (e.response.data.message) {
+        msg += `: ${e.response.data.message}`
+      }
+      throw new Error(msg)
+    }
+  }
+
+  async getApiKeys(): Promise<ApiKeyDto[]> {
+    try {
+      return (await this.http.get(`${API_USERS}/me/api-keys`)).data
+    } catch (e) {
+      let msg = 'An error occurred while trying to retrieve api keys'
+      if (e.response.data.message) {
+        msg += `: ${e.response.data.message}`
+      }
+      throw new Error(msg)
+    }
+  }
+
+  async createApiKey(apiKeyRequest: ApiKeyRequestDto): Promise<ApiKeyDto> {
+    try {
+      return (await this.http.post(`${API_USERS}/me/api-keys`, apiKeyRequest)).data
+    } catch (e) {
+      let msg = 'An error occurred while trying to create api key'
+      if (e.response.data.message) {
+        msg += `: ${e.response.data.message}`
+      }
+      throw new Error(msg)
+    }
+  }
+
+  async deleteApiKey(apiKeyId: string) {
+    try {
+      await this.http.delete(`${API_USERS}/me/api-keys/${apiKeyId}`)
+    } catch (e) {
+      let msg = `An error occurred while trying to delete api key ${apiKeyId}`
       if (e.response.data.message) {
         msg += `: ${e.response.data.message}`
       }

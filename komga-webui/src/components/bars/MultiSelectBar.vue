@@ -43,7 +43,7 @@
         </v-tooltip>
       </v-btn>
 
-      <v-btn icon @click="addToCollection" v-if="isAdmin && kind === 'series'">
+      <v-btn icon @click="addToCollection" v-if="isAdmin && (kind === 'series' || (kind === 'books' && oneshots))">
         <v-tooltip bottom>
           <template v-slot:activator="{ on }">
             <v-icon v-on="on">mdi-playlist-plus</v-icon>
@@ -52,7 +52,7 @@
         </v-tooltip>
       </v-btn>
 
-      <v-btn icon @click="addToReadList" v-if="isAdmin && kind === 'books'">
+      <v-btn icon @click="addToReadList" v-if="isAdmin && (kind === 'books' || kind === 'series')">
         <v-tooltip bottom>
           <template v-slot:activator="{ on }">
             <v-icon v-on="on">mdi-book-plus-multiple</v-icon>
@@ -79,7 +79,7 @@
         </v-tooltip>
       </v-btn>
 
-      <v-btn icon @click="doDelete" v-if="isAdmin && (kind === 'collections' || kind === 'readlists')">
+      <v-btn icon @click="doDelete" v-if="isAdmin">
         <v-tooltip bottom>
           <template v-slot:activator="{ on }">
             <v-icon v-on="on">mdi-delete</v-icon>
@@ -113,6 +113,10 @@ export default Vue.extend({
     kind: {
       type: String,
       required: true,
+    },
+    oneshots: {
+      type: Boolean,
+      default: false,
     },
     showSelectAll: {
       type: Boolean,

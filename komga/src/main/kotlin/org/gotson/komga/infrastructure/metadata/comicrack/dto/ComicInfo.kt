@@ -2,11 +2,10 @@ package org.gotson.komga.infrastructure.metadata.comicrack.dto
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
-import javax.xml.bind.annotation.XmlSchemaType
+import jakarta.xml.bind.annotation.XmlSchemaType
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 class ComicInfo {
-
   @JsonProperty(value = "Title")
   var title: String? = null
 
@@ -79,6 +78,9 @@ class ComicInfo {
   @JsonProperty(value = "Genre")
   var genre: String? = null
 
+  @JsonProperty(value = "Tags")
+  var tags: String? = null
+
   @JsonProperty(value = "Web")
   var web: String? = null
 
@@ -122,4 +124,7 @@ class ComicInfo {
 
   @JsonProperty(value = "AgeRating", defaultValue = "Unknown")
   var ageRating: AgeRating? = null
+
+  @JsonProperty(value = "GTIN")
+  var gtin: String? = null
 }

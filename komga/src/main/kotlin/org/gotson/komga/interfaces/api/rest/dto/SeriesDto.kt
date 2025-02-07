@@ -9,11 +9,11 @@ data class SeriesDto(
   val libraryId: String,
   val name: String,
   val url: String,
-  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
   val created: LocalDateTime,
-  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
   val lastModified: LocalDateTime,
-  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
   val fileLastModified: LocalDateTime,
   val booksCount: Int,
   val booksReadCount: Int,
@@ -22,10 +22,10 @@ data class SeriesDto(
   val metadata: SeriesMetadataDto,
   val booksMetadata: BookMetadataAggregationDto,
   val deleted: Boolean,
+  val oneshot: Boolean,
 )
 
-fun SeriesDto.restrictUrl(restrict: Boolean) =
-  if (restrict) copy(url = "") else this
+fun SeriesDto.restrictUrl(restrict: Boolean) = if (restrict) copy(url = "") else this
 
 data class SeriesMetadataDto(
   val status: String,
@@ -50,11 +50,16 @@ data class SeriesMetadataDto(
   val tagsLock: Boolean,
   val totalBookCount: Int?,
   val totalBookCountLock: Boolean,
-
-  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+  val sharingLabels: Set<String>,
+  val sharingLabelsLock: Boolean,
+  val links: List<WebLinkDto>,
+  val linksLock: Boolean,
+  val alternateTitles: List<AlternateTitleDto>,
+  val alternateTitlesLock: Boolean,
+  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
   val created: LocalDateTime,
-  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-  val lastModified: LocalDateTime
+  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
+  val lastModified: LocalDateTime,
 )
 
 data class BookMetadataAggregationDto(
@@ -64,9 +69,8 @@ data class BookMetadataAggregationDto(
   val releaseDate: LocalDate?,
   val summary: String,
   val summaryNumber: String,
-
-  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
   val created: LocalDateTime,
-  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-  val lastModified: LocalDateTime
+  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
+  val lastModified: LocalDateTime,
 )

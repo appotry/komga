@@ -1,6 +1,6 @@
 package db.migration.sqlite
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.apache.commons.lang3.StringUtils
 import org.flywaydb.core.api.migration.BaseJavaMigration
 import org.flywaydb.core.api.migration.Context
@@ -14,7 +14,7 @@ class V20210624165023__missing_series_metadata : BaseJavaMigration() {
     val jdbcTemplate = JdbcTemplate(SingleConnectionDataSource(context.connection, true))
 
     val seriesWithoutMetada = jdbcTemplate.queryForList(
-      """select s.ID, s.NAME from SERIES s where s.ID not in (select sm.SERIES_ID from SERIES_METADATA sm)"""
+      """select s.ID, s.NAME from SERIES s where s.ID not in (select sm.SERIES_ID from SERIES_METADATA sm)""",
     )
 
     if (seriesWithoutMetada.isNotEmpty()) {

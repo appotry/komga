@@ -4,8 +4,8 @@ interface CollectionDto {
   ordered: boolean,
   filtered: boolean,
   seriesIds: string[],
-  createdDate: string,
-  lastModifiedDate: string
+  createdDate: Date,
+  lastModifiedDate: Date
 }
 
 interface CollectionCreationDto {
@@ -18,4 +18,15 @@ interface CollectionUpdateDto {
   name?: string,
   ordered?: boolean,
   seriesIds?: string[]
+}
+
+interface CollectionThumbnailDto {
+  id: string,
+  collectionId: string,
+  type: string,
+  selected: boolean,
+  mediaType: string,
+  fileSize: number,
+  width: number,
+  height: number,
 }

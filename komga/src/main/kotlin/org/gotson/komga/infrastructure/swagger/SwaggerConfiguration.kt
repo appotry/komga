@@ -11,7 +11,6 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 class SwaggerConfiguration {
-
   @Bean
   fun openApi(): OpenAPI =
     OpenAPI()
@@ -21,23 +20,20 @@ class SwaggerConfiguration {
           .version("v1.0")
           .description(
             """
-          Komga offers 2 APIs: REST and OPDS.
+            Komga offers 2 APIs: REST and OPDS.
 
-          Both APIs are secured using HTTP Basic Authentication.
-            """.trimIndent()
-          )
-          .license(License().name("MIT").url("https://github.com/gotson/komga/blob/master/LICENSE"))
-      )
-      .externalDocs(
+            Both APIs are secured using HTTP Basic Authentication.
+            """.trimIndent(),
+          ).license(License().name("MIT").url("https://github.com/gotson/komga/blob/master/LICENSE")),
+      ).externalDocs(
         ExternalDocumentation()
           .description("Komga documentation")
-          .url("https://komga.org")
-      )
-      .components(
+          .url("https://komga.org"),
+      ).components(
         Components()
           .addSecuritySchemes(
             "basicAuth",
-            SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("basic")
-          )
+            SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("basic"),
+          ),
       )
 }

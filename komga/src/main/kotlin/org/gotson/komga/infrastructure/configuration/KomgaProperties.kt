@@ -1,52 +1,53 @@
 package org.gotson.komga.infrastructure.configuration
 
+import jakarta.annotation.PostConstruct
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Positive
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.convert.DurationUnit
 import org.springframework.stereotype.Component
 import org.springframework.validation.annotation.Validated
+import org.sqlite.SQLiteConfig.JournalMode
 import java.time.Duration
 import java.time.temporal.ChronoUnit
-import javax.validation.constraints.NotBlank
-import javax.validation.constraints.Positive
+import kotlin.io.path.Path
+import kotlin.io.path.createDirectories
 
 @Component
 @ConfigurationProperties(prefix = "komga")
 @Validated
 class KomgaProperties {
-  var librariesScanCron: String = ""
+  @PostConstruct
+  private fun makeDirs() {
+    try {
+      Path(database.file).parent.createDirectories()
+    } catch (_: Exception) {
+    }
+  }
 
-  var librariesScanStartup: Boolean = false
+  @Positive
+  var pageHashing: Int = 3
 
-  var librariesScanDirectoryExclusions: List<String> = emptyList()
-
-  var deleteEmptyReadLists: Boolean = true
-
-  var deleteEmptyCollections: Boolean = true
-
-  var fileHashing: Boolean = true
-
-  var rememberMe = RememberMe()
-
-  @DurationUnit(ChronoUnit.SECONDS)
-  var sessionTimeout: Duration = Duration.ofMinutes(30)
-
-  var nativeWebp: Boolean = true
+  @Positive
+  var epubDivinaLetterCountThreshold: Int = 15
 
   var oauth2AccountCreation: Boolean = false
 
+  var oidcEmailVerification: Boolean = true
+
   var database = Database()
+
+  var tasksDb = Database()
 
   var cors = Cors()
 
   var lucene = Lucene()
 
-  class RememberMe {
-    @get:NotBlank
-    var key: String? = null
+  var configDir: String? = null
 
-    @DurationUnit(ChronoUnit.SECONDS)
-    var validity: Duration = Duration.ofDays(14)
-  }
+  var kobo = Kobo()
+
+  val fonts = Fonts()
 
   class Cors {
     var allowedOrigins: List<String> = emptyList()
@@ -58,6 +59,24 @@ class KomgaProperties {
 
     @get:Positive
     var batchChunkSize: Int = 1000
+
+    @get:Positive
+    var poolSize: Int? = null
+
+    @get:Positive
+    var maxPoolSize: Int = 1
+
+    var journalMode: JournalMode? = null
+
+    @DurationUnit(ChronoUnit.SECONDS)
+    var busyTimeout: Duration? = null
+
+    var pragmas: Map<String, String> = emptyMap()
+  }
+
+  class Fonts {
+    @get:NotBlank
+    var dataDirectory: String = ""
   }
 
   class Lucene {
@@ -65,6 +84,9 @@ class KomgaProperties {
     var dataDirectory: String = ""
 
     var indexAnalyzer = IndexAnalyzer()
+
+    @DurationUnit(ChronoUnit.SECONDS)
+    var commitDelay: Duration = Duration.ofSeconds(2)
 
     class IndexAnalyzer {
       @get:Positive
@@ -75,5 +97,12 @@ class KomgaProperties {
 
       var preserveOriginal: Boolean = true
     }
+  }
+
+  class Kobo {
+    @get:Positive
+    var syncItemLimit: Int = 100
+
+    var kepubifyPath: String? = null
   }
 }

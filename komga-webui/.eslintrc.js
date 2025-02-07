@@ -15,6 +15,7 @@ module.exports = {
     'comma-dangle': ['error', 'always-multiline'],
     'semi': ['error', 'never'],
     'quotes': ['error', 'single'],
+    'vue/valid-v-slot': 'off',
   },
   parserOptions: {
     parser: '@typescript-eslint/parser',
@@ -23,6 +24,7 @@ module.exports = {
     {
       files: [
         '**/__tests__/*.{j,t}s?(x)',
+        '**/tests/unit/**/*.spec.{j,t}s?(x)',
       ],
       env: {
         jest: true,

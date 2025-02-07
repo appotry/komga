@@ -1,11 +1,11 @@
 package org.gotson.komga.infrastructure.security.session
 
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.session.web.http.CookieHttpSessionIdResolver
 import org.springframework.session.web.http.CookieSerializer
 import org.springframework.session.web.http.HeaderHttpSessionIdResolver
 import org.springframework.session.web.http.HttpSessionIdResolver
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 class SmartHttpSessionIdResolver(
   private val sessionHeaderName: String,
@@ -14,14 +14,20 @@ class SmartHttpSessionIdResolver(
   private val cookie = CookieHttpSessionIdResolver().apply { setCookieSerializer(cookieSerializer) }
   private val header = HeaderHttpSessionIdResolver(sessionHeaderName)
 
-  override fun resolveSessionIds(request: HttpServletRequest): List<String> =
-    request.getResolver().resolveSessionIds(request)
+  override fun resolveSessionIds(request: HttpServletRequest): List<String> = request.getResolver().resolveSessionIds(request)
 
-  override fun setSessionId(request: HttpServletRequest, response: HttpServletResponse, sessionId: String) {
+  override fun setSessionId(
+    request: HttpServletRequest,
+    response: HttpServletResponse,
+    sessionId: String,
+  ) {
     request.getResolver().setSessionId(request, response, sessionId)
   }
 
-  override fun expireSession(request: HttpServletRequest, response: HttpServletResponse) {
+  override fun expireSession(
+    request: HttpServletRequest,
+    response: HttpServletResponse,
+  ) {
     request.getResolver().expireSession(request, response)
   }
 

@@ -1,5 +1,3 @@
-import {without} from 'lodash'
-
 export enum ReadingDirection {
   LEFT_TO_RIGHT = 'LEFT_TO_RIGHT',
   RIGHT_TO_LEFT = 'RIGHT_TO_LEFT',
@@ -18,19 +16,17 @@ export enum MediaStatus {
 export enum ReadStatus {
   UNREAD = 'UNREAD',
   IN_PROGRESS = 'IN_PROGRESS',
-  READ = 'READ',
-  UNREAD_AND_IN_PROGRESS = 'UNREAD_AND_IN_PROGRESS'
-}
-
-export function replaceCompositeReadStatus(list: string[]): string[] {
-  if(list?.includes(ReadStatus.UNREAD_AND_IN_PROGRESS)){
-    return [...without(list, ReadStatus.UNREAD_AND_IN_PROGRESS), ReadStatus.UNREAD, ReadStatus.IN_PROGRESS]
-  }
-  else return list
+  READ = 'READ'
 }
 
 export enum CopyMode {
   MOVE = 'MOVE',
   COPY = 'COPY',
   HARDLINK = 'HARDLINK',
+}
+
+export enum MediaProfile {
+  DIVINA = 'DIVINA',
+  PDF = 'PDF',
+  EPUB = 'EPUB',
 }

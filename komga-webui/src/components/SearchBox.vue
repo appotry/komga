@@ -50,7 +50,17 @@
           </v-img>
           <v-list-item-content>
             <v-list-item-title>{{ data.item.metadata.title }}</v-list-item-title>
-            <v-list-item-subtitle>{{ $t('searchbox.in_library', {library: getLibraryName(data.item)}) }}</v-list-item-subtitle>
+            <v-list-item-subtitle>{{
+                $t('searchbox.in_library', {library: getLibraryName(data.item)})
+              }}
+            </v-list-item-subtitle>
+            <v-list-item-subtitle v-if="data.item.booksMetadata.releaseDate">{{
+                new Intl.DateTimeFormat($i18n.locale, {
+                  year: 'numeric',
+                  timeZone: 'UTC'
+                }).format(new Date(data.item.booksMetadata.releaseDate))
+              }}
+            </v-list-item-subtitle>
           </v-list-item-content>
         </template>
 
@@ -66,7 +76,14 @@
 
           <v-list-item-content>
             <v-list-item-title>{{ data.item.metadata.title }}</v-list-item-title>
-            <v-list-item-subtitle>{{ $t('searchbox.in_library', {library: getLibraryName(data.item)}) }}</v-list-item-subtitle>
+            <v-list-item-subtitle v-if="!data.item.oneshot">{{ data.item.seriesTitle }} - {{
+                data.item.metadata.number
+              }}
+            </v-list-item-subtitle>
+            <v-list-item-subtitle>{{
+                $t('searchbox.in_library', {library: getLibraryName(data.item)})
+              }}
+            </v-list-item-subtitle>
           </v-list-item-content>
         </template>
 
@@ -105,6 +122,13 @@ import {BookDto} from '@/types/komga-books'
 import {SeriesDto} from '@/types/komga-series'
 import {getReadProgress} from '@/functions/book-progress'
 import {ReadStatus} from '@/types/enum-books'
+import {ReadListDto} from '@/types/komga-readlists'
+import {
+  BookSearch,
+  SearchConditionOneShot,
+  SearchOperatorIsFalse,
+  SeriesSearch,
+} from '@/types/komga-search'
 
 export default Vue.extend({
   name: 'SearchBox',
@@ -129,6 +153,10 @@ export default Vue.extend({
         })
 
         if (val.type === 'series') this.$router.push({name: 'browse-series', params: {seriesId: val.id}})
+        else if (val.type === 'book' && val.oneshot) this.$router.push({
+          name: 'browse-oneshot',
+          params: {seriesId: val.seriesId},
+        })
         else if (val.type === 'book') this.$router.push({name: 'browse-book', params: {bookId: val.id}})
         else if (val.type === 'collection') this.$router.push({
           name: 'browse-collection',
@@ -154,7 +182,7 @@ export default Vue.extend({
       if (this.search) {
         results.push({type: 'search'})
         if (this.series.length > 0) {
-          results.push({header: this.$t('common.series').toString().toUpperCase()})
+          results.push({header: this.$tc('common.series', 2).toString().toUpperCase()})
           results.push(...this.series.map(o => ({...o, type: 'series'})))
         }
         if (this.books.length > 0) {
@@ -180,8 +208,13 @@ export default Vue.extend({
     searchItems: debounce(async function (this: any, query: string) {
       if (query) {
         this.loading = true
-        this.series = (await this.$komgaSeries.getSeries(undefined, {size: this.pageSize}, query)).content
-        this.books = (await this.$komgaBooks.getBooks(undefined, {size: this.pageSize}, query)).content
+        this.series = (await this.$komgaSeries.getSeriesList({
+          fullTextSearch: query,
+          condition: new SearchConditionOneShot(new SearchOperatorIsFalse()),
+        } as SeriesSearch, {size: this.pageSize})).content
+        this.books = (await this.$komgaBooks.getBooksList({
+          fullTextSearch: query,
+        } as BookSearch, {size: this.pageSize})).content
         this.collections = (await this.$komgaCollections.getCollections(undefined, {size: this.pageSize}, query)).content
         this.readLists = (await this.$komgaReadLists.getReadLists(undefined, {size: this.pageSize}, query)).content
         this.showResults = true

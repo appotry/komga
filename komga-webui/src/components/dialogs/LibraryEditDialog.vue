@@ -30,6 +30,10 @@
               {{ $t('dialog.edit_library.tab_general') }}
             </v-tab>
             <v-tab class="justify-start">
+              <v-icon left class="hidden-xs-only">mdi-magnify-scan</v-icon>
+              {{ $t('dialog.edit_library.label_scanner') }}
+            </v-tab>
+            <v-tab class="justify-start">
               <v-icon left class="hidden-xs-only">mdi-tune</v-icon>
               {{ $t('dialog.edit_library.tab_options') }}
             </v-tab>
@@ -79,31 +83,169 @@
               </v-card>
             </v-tab-item>
 
-            <!--  Tab: Options  -->
+            <!--  Tab: Scanner  -->
             <v-tab-item>
               <v-card flat :min-height="$vuetify.breakpoint.xs ? $vuetify.breakpoint.height * .8 : undefined">
                 <v-container fluid>
                   <v-row>
-                    <v-col cols="auto">
-                      <span class="text-subtitle-1 text--primary">{{ $t('dialog.edit_library.label_scanner') }}</span>
+                    <v-col>
                       <v-checkbox
                         v-model="form.emptyTrashAfterScan"
                         :label="$t('dialog.edit_library.field_scanner_empty_trash_after_scan')"
                         hide-details
                         class="mx-4"
                       />
+
                       <v-checkbox
                         v-model="form.scanForceModifiedTime"
                         :label="$t('dialog.edit_library.field_scanner_force_directory_modified_time')"
                         hide-details
                         class="mx-4"
-                      />
+                      >
+                        <template v-slot:append>
+                          <v-tooltip bottom>
+                            <template v-slot:activator="{ on }">
+                              <v-icon v-on="on" color="info">mdi-help-circle-outline</v-icon>
+                            </template>
+                            {{ $t('dialog.edit_library.tooltip_scanner_force_modified_time') }}
+                          </v-tooltip>
+                        </template>
+                      </v-checkbox>
+
                       <v-checkbox
-                        v-model="form.scanDeep"
-                        :label="$t('dialog.edit_library.field_scanner_deep_scan')"
+                        v-model="form.scanOnStartup"
+                        :label="$t('dialog.edit_library.field_scanner_scan_startup')"
                         hide-details
                         class="mx-4"
                       />
+
+                      <v-select :items="scanInterval"
+                                v-model="form.scanInterval"
+                                :label="$t('dialog.edit_library.field_scan_interval')"
+                                flat
+                                hide-details
+                                class="mx-4 mt-3"
+                      />
+
+                      <v-text-field v-model="form.oneshotsDirectory"
+                                    clearable
+                                    :label="$t('dialog.edit_library.field_oneshotsdirectory')"
+                                    :error-messages="getErrors('oneshotsDirectory')"
+                                    class="mx-4 mt-4"
+                      >
+                        <template v-slot:append-outer>
+                          <v-tooltip bottom>
+                            <template v-slot:activator="{ on }">
+                              <v-icon v-on="on" color="info">mdi-help-circle-outline</v-icon>
+                            </template>
+                            {{ $t('dialog.edit_library.tooltip_oneshotsdirectory') }}
+                          </v-tooltip>
+                        </template>
+                      </v-text-field>
+
+                      <div class="mx-4">
+                        <span class="text-subtitle-1 text--primary">{{
+                            $t('dialog.edit_library.label_scan_types')
+                          }}</span>
+                        <v-chip-group
+                          multiple
+                          v-model="form.scanTypes"
+                          active-class="primary"
+                        >
+                          <v-chip v-for="type in fileTypes"
+                                  :key="type.value"
+                                  :value="type.value"
+                                  filter
+                                  outlined
+                          >{{ type.text }}
+                          </v-chip>
+                        </v-chip-group>
+                      </div>
+
+                      <v-combobox v-model="form.scanDirectoryExclusions"
+                                  clearable
+                                  multiple
+                                  small-chips
+                                  deletable-chips
+                                  :label="$t('dialog.edit_library.label_scan_directory_exclusions')"
+                                  class="mx-4"
+                      />
+                    </v-col>
+                  </v-row>
+                </v-container>
+              </v-card>
+            </v-tab-item>
+
+            <!--  Tab: Options  -->
+            <v-tab-item>
+              <v-card flat :min-height="$vuetify.breakpoint.xs ? $vuetify.breakpoint.height * .8 : undefined">
+                <v-container fluid>
+                  <v-row>
+                    <v-col cols="auto">
+                      <span class="text-subtitle-1 text--primary">{{ $t('dialog.edit_library.label_analysis') }}</span>
+                      <v-checkbox
+                        v-model="form.hashFiles"
+                        :label="$t('dialog.edit_library.field_analysis_hash_files')"
+                        hide-details
+                        class="mx-4 align-center"
+                      >
+                        <template v-slot:append>
+                          <v-tooltip bottom>
+                            <template v-slot:activator="{ on }">
+                              <v-icon v-on="on" color="warning">mdi-alert-circle-outline</v-icon>
+                            </template>
+                            {{ $t('dialog.edit_library.tooltip_use_resources') }}
+                          </v-tooltip>
+                        </template>
+                      </v-checkbox>
+
+                      <v-checkbox
+                        v-model="form.hashPages"
+                        :label="$t('dialog.edit_library.field_analysis_hash_pages')"
+                        hide-details
+                        class="mx-4"
+                      >
+                        <template v-slot:append>
+                          <v-tooltip bottom>
+                            <template v-slot:activator="{ on }">
+                              <v-icon v-on="on" color="warning">mdi-alert-circle-outline</v-icon>
+                            </template>
+                            {{ $t('dialog.edit_library.tooltip_use_resources') }}
+                          </v-tooltip>
+                        </template>
+                      </v-checkbox>
+
+                      <v-checkbox
+                        v-model="form.hashKoreader"
+                        :label="$t('dialog.edit_library.field_analysis_hash_koreader')"
+                        hide-details
+                        class="mx-4"
+                      >
+                        <template v-slot:append>
+                          <v-tooltip bottom>
+                            <template v-slot:activator="{ on }">
+                              <v-icon v-on="on" color="warning">mdi-alert-circle-outline</v-icon>
+                            </template>
+                            {{ $t('dialog.edit_library.tooltip_use_resources') }}
+                          </v-tooltip>
+                        </template>
+                      </v-checkbox>
+
+                      <v-checkbox
+                        v-model="form.analyzeDimensions"
+                        :label="$t('dialog.edit_library.field_analysis_analyze_dimensions')"
+                        hide-details
+                        class="mx-4"
+                      >
+                        <template v-slot:append>
+                          <v-tooltip bottom>
+                            <template v-slot:activator="{ on }">
+                              <v-icon v-on="on" color="warning">mdi-alert-circle-outline</v-icon>
+                            </template>
+                            {{ $t('dialog.edit_library.tooltip_use_resources') }}
+                          </v-tooltip>
+                        </template>
+                      </v-checkbox>
                     </v-col>
                   </v-row>
                   <v-row>
@@ -138,7 +280,9 @@
                   </v-row>
                   <v-row>
                     <v-col>
-                      <span class="text-subtitle-1 text--primary">{{ $t('dialog.edit_library.label_series_cover') }}</span>
+                      <span class="text-subtitle-1 text--primary">{{
+                          $t('dialog.edit_library.label_series_cover')
+                        }}</span>
                       <v-select :items="seriesCover"
                                 v-model="form.seriesCover"
                                 :label="$t('dialog.edit_library.field_series_cover')"
@@ -178,6 +322,12 @@
                       <v-checkbox
                         v-model="form.importComicInfoSeries"
                         :label="$t('dialog.edit_library.field_import_comicinfo_series')"
+                        hide-details
+                        class="mx-4"
+                      />
+                      <v-checkbox
+                        v-model="form.importComicInfoSeriesAppendVolume"
+                        :label="$t('dialog.edit_library.field_import_comicinfo_series_append_volume')"
                         hide-details
                         class="mx-4"
                       />
@@ -224,7 +374,9 @@
                   </v-row>
                   <v-row>
                     <v-col>
-                      <span class="text-subtitle-1 text--primary">{{ $t('dialog.edit_library.label_import_mylar') }}</span>
+                      <span class="text-subtitle-1 text--primary">{{
+                          $t('dialog.edit_library.label_import_mylar')
+                        }}</span>
                       <v-checkbox
                         v-model="form.importMylarSeries"
                         :label="$t('dialog.edit_library.field_import_mylar_series')"
@@ -256,7 +408,16 @@
                         :label="$t('dialog.edit_library.field_import_barcode_isbn')"
                         hide-details
                         class="mx-4"
-                      />
+                      >
+                        <template v-slot:append>
+                          <v-tooltip bottom>
+                            <template v-slot:activator="{ on }">
+                              <v-icon v-on="on" color="warning">mdi-alert-circle-outline</v-icon>
+                            </template>
+                            {{ $t('dialog.edit_library.tooltip_use_resources') }}
+                          </v-tooltip>
+                        </template>
+                      </v-checkbox>
                     </v-col>
                   </v-row>
 
@@ -285,7 +446,7 @@ import FileBrowserDialog from '@/components/dialogs/FileBrowserDialog.vue'
 import Vue from 'vue'
 import {required} from 'vuelidate/lib/validators'
 import {ERROR} from '@/types/events'
-import {SeriesCoverDto} from '@/types/enum-libraries'
+import {ScanIntervalDto, SeriesCoverDto} from '@/types/enum-libraries'
 import {LibraryDto} from '@/types/komga-libraries'
 
 export default Vue.extend({
@@ -303,17 +464,26 @@ export default Vue.extend({
         importComicInfoSeries: true,
         importComicInfoCollection: true,
         importComicInfoReadList: true,
+        importComicInfoSeriesAppendVolume: true,
         importEpubBook: true,
         importEpubSeries: true,
         importMylarSeries: true,
         importLocalArtwork: true,
-        importBarcodeIsbn: true,
+        importBarcodeIsbn: false,
         scanForceModifiedTime: false,
-        scanDeep: false,
+        scanInterval: ScanIntervalDto.EVERY_6H,
+        scanOnStartup: false,
+        scanTypes: [],
+        scanDirectoryExclusions: [] as string[],
         repairExtensions: false,
         convertToCbz: false,
         emptyTrashAfterScan: false,
         seriesCover: SeriesCoverDto.FIRST as SeriesCoverDto,
+        hashFiles: true,
+        hashPages: false,
+        hashKoreader: false,
+        analyzeDimensions: true,
+        oneshotsDirectory: '',
       },
       validationFieldNames: new Map([]),
     }
@@ -326,7 +496,7 @@ export default Vue.extend({
       return this.library ? this.$t('dialog.edit_library.button_confirm_edit').toString() : this.$t('dialog.edit_library.button_confirm_add').toString()
     },
     showNext(): boolean {
-      return !this.library && this.tab !== 2
+      return !this.library && this.tab !== 3
     },
     seriesCover(): any[] {
       return Object.keys(SeriesCoverDto).map(x => ({
@@ -334,10 +504,28 @@ export default Vue.extend({
         value: x,
       }))
     },
+    scanInterval(): any[] {
+      return Object.keys(ScanIntervalDto).map(x => ({
+        text: this.$t(`enums.scan_interval.${x}`),
+        value: x,
+      }))
+    },
+    fileTypes(): any[] {
+      return [{
+        text: this.$t('common.cbx').toString(),
+        value: 'cbx',
+      }, {
+        text: this.$t('common.pdf').toString(),
+        value: 'pdf',
+      }, {
+        text: this.$t('common.epub').toString(),
+        value: 'epub',
+      }]
+    },
 
     importComicInfo: {
       get: function (): number {
-        const val = [this.form.importComicInfoBook, this.form.importComicInfoCollection, this.form.importComicInfoReadList, this.form.importComicInfoSeries]
+        const val = [this.form.importComicInfoBook, this.form.importComicInfoCollection, this.form.importComicInfoReadList, this.form.importComicInfoSeries, this.form.importComicInfoSeriesAppendVolume]
         const count = val.filter(Boolean).length
         if (count === val.length) return 2
         if (count === 0) return 0
@@ -348,6 +536,7 @@ export default Vue.extend({
         this.form.importComicInfoCollection = value
         this.form.importComicInfoReadList = value
         this.form.importComicInfoSeries = value
+        this.form.importComicInfoSeriesAppendVolume = value
       },
     },
 
@@ -431,17 +620,30 @@ export default Vue.extend({
       this.form.importComicInfoSeries = library ? library.importComicInfoSeries : true
       this.form.importComicInfoCollection = library ? library.importComicInfoCollection : true
       this.form.importComicInfoReadList = library ? library.importComicInfoReadList : true
+      this.form.importComicInfoSeriesAppendVolume = library ? library.importComicInfoSeriesAppendVolume : true
       this.form.importEpubBook = library ? library.importEpubBook : true
       this.form.importEpubSeries = library ? library.importEpubSeries : true
       this.form.importMylarSeries = library ? library.importMylarSeries : true
       this.form.importLocalArtwork = library ? library.importLocalArtwork : true
-      this.form.importBarcodeIsbn = library ? library.importBarcodeIsbn : true
+      this.form.importBarcodeIsbn = library ? library.importBarcodeIsbn : false
       this.form.scanForceModifiedTime = library ? library.scanForceModifiedTime : false
-      this.form.scanDeep = library ? library.scanDeep : false
+      this.form.scanInterval = library ? library.scanInterval : ScanIntervalDto.EVERY_6H
+      this.form.scanOnStartup = library ? library.scanOnStartup : false
+      this.form.scanTypes = []
+      if (!library) this.form.scanTypes = ['cbx', 'pdf', 'epub']
+      if (library?.scanEpub == true) this.form.scanTypes.splice(0, 0, 'epub')
+      if (library?.scanPdf == true) this.form.scanTypes.splice(0, 0, 'pdf')
+      if (library?.scanCbx == true) this.form.scanTypes.splice(0, 0, 'cbx')
+      this.form.scanDirectoryExclusions = library ? library.scanDirectoryExclusions : ['#recycle', '@eaDir', '@Recycle']
       this.form.repairExtensions = library ? library.repairExtensions : false
       this.form.convertToCbz = library ? library.convertToCbz : false
       this.form.emptyTrashAfterScan = library ? library.emptyTrashAfterScan : false
       this.form.seriesCover = library ? library.seriesCover : SeriesCoverDto.FIRST
+      this.form.hashFiles = library ? library.hashFiles : true
+      this.form.hashPages = library ? library.hashPages : false
+      this.form.hashKoreader = library ? library.hashKoreader : false
+      this.form.analyzeDimensions = library ? library.analyzeDimensions : true
+      this.form.oneshotsDirectory = library ? library.oneshotsDirectory : ''
       this.$v.$reset()
     },
     validateLibrary() {
@@ -455,17 +657,28 @@ export default Vue.extend({
           importComicInfoSeries: this.form.importComicInfoSeries,
           importComicInfoCollection: this.form.importComicInfoCollection,
           importComicInfoReadList: this.form.importComicInfoReadList,
+          importComicInfoSeriesAppendVolume: this.form.importComicInfoSeriesAppendVolume,
           importEpubBook: this.form.importEpubBook,
           importEpubSeries: this.form.importEpubSeries,
           importMylarSeries: this.form.importMylarSeries,
           importLocalArtwork: this.form.importLocalArtwork,
           importBarcodeIsbn: this.form.importBarcodeIsbn,
           scanForceModifiedTime: this.form.scanForceModifiedTime,
-          scanDeep: this.form.scanDeep,
+          scanInterval: this.form.scanInterval,
+          scanOnStartup: this.form.scanOnStartup,
+          scanCbx: this.form.scanTypes.includes('cbx'),
+          scanPdf: this.form.scanTypes.includes('pdf'),
+          scanEpub: this.form.scanTypes.includes('epub'),
+          scanDirectoryExclusions: this.form.scanDirectoryExclusions,
           repairExtensions: this.form.repairExtensions,
           convertToCbz: this.form.convertToCbz,
           emptyTrashAfterScan: this.form.emptyTrashAfterScan,
           seriesCover: this.form.seriesCover,
+          hashFiles: this.form.hashFiles,
+          hashPages: this.form.hashPages,
+          hashKoreader: this.form.hashKoreader,
+          analyzeDimensions: this.form.analyzeDimensions,
+          oneshotsDirectory: this.form.oneshotsDirectory,
         }
       }
       return null

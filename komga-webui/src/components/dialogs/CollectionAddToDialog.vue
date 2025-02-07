@@ -74,8 +74,8 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import {SeriesDto} from '@/types/komga-series'
 import {ERROR} from '@/types/events'
+import {stripAccents} from '@/functions/string'
 
 export default Vue.extend({
   name: 'CollectionAddToDialog',
@@ -89,8 +89,8 @@ export default Vue.extend({
   },
   props: {
     value: Boolean,
-    series: {
-      type: [Object as () => SeriesDto, Array as () => SeriesDto[]],
+    seriesIds: {
+      type: [Array as () => string[]],
       required: true,
     },
   },
@@ -99,7 +99,7 @@ export default Vue.extend({
       this.modal = val
       if (val) {
         this.newCollection = ''
-        this.collections = (await this.$komgaCollections.getCollections(undefined, {unpaged: true} as PageRequest)).content
+        this.collections = this.$_.orderBy((await this.$komgaCollections.getCollections(undefined, {unpaged: true} as PageRequest)).content, ['lastModifiedDate'], ['desc'])
       }
     },
     modal(val) {
@@ -110,17 +110,13 @@ export default Vue.extend({
 
   },
   computed: {
-    seriesIds(): string[] {
-      if (Array.isArray(this.series)) return this.series.map(s => s.id)
-      else return [this.series.id]
-    },
     duplicate(): string {
-      if (this.newCollection !== '' && this.collections.some(e => e.name === this.newCollection)) {
+      if (this.newCollection !== '' && this.collections.some(e => e.name.toLowerCase() === this.newCollection.toLowerCase())) {
         return this.$t('dialog.add_to_collection.field_search_create_error').toString()
       } else return ''
     },
     collectionsFiltered(): CollectionDto[] {
-      return this.collections.filter((x: CollectionDto) => x.name.toLowerCase().includes(this.newCollection.toLowerCase()))
+      return this.collections.filter((x: CollectionDto) => stripAccents(x.name.toLowerCase()).includes(stripAccents(this.newCollection.toLowerCase())))
     },
   },
   methods: {

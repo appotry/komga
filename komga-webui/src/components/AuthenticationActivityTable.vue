@@ -24,7 +24,7 @@
         new Intl.DateTimeFormat($i18n.locale, {
           dateStyle: 'medium',
           timeStyle: 'short'
-        }).format(new Date(item.dateTime))
+        }).format(item.dateTime)
       }}
     </template>
   </v-data-table>
@@ -33,6 +33,7 @@
 <script lang="ts">
 import Vue from 'vue'
 import {ERROR} from '@/types/events'
+import {AuthenticationActivityDto} from '@/types/komga-users'
 
 export default Vue.extend({
   name: 'AuthenticationActivityTable',
@@ -67,14 +68,12 @@ export default Vue.extend({
         {text: this.$t('authentication_activity.user_agent').toString(), value: 'userAgent'},
         {text: this.$t('authentication_activity.success').toString(), value: 'success'},
         {text: this.$t('authentication_activity.source').toString(), value: 'source'},
+        {text: this.$t('authentication_activity.api_key').toString(), value: 'apiKeyComment'},
         {text: this.$t('authentication_activity.error').toString(), value: 'error'},
         {text: this.$t('authentication_activity.datetime').toString(), value: 'dateTime', groupable: false},
       )
       return headers
     },
-  },
-  async mounted() {
-    this.loadData()
   },
   methods: {
     async loadData() {
